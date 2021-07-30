@@ -2,3 +2,6 @@ target/
 
 # vim files
 *.sw?
+
+# java tags file
+tags

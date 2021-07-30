@@ -90,7 +90,7 @@ public class Scanner {
       addToken(TokenType.STAR);
       break;
     case '!':
-      addToken(match('=') ? TokenType.BANG_EQUAL : TokenType.EQUAL);
+      addToken(match('=') ? TokenType.BANG_EQUAL : TokenType.BANG);
       break;
     case '=':
       addToken(match('=') ? TokenType.EQUAL_EQUAL : TokenType.EQUAL);
