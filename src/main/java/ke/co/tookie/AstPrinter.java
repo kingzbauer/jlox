@@ -1,6 +1,6 @@
 package ke.co.tookie;
 
-class AstPrinter implements Expr.Visitor<String> {
+abstract class AstPrinter implements Expr.Visitor<String> {
   String print(Expr expr) {
     return expr.accept(this);
   }
@@ -49,6 +49,6 @@ class AstPrinter implements Expr.Visitor<String> {
       new Expr.Grouping(
         new Expr.Literal(45.67)));
 
-    System.out.println(new AstPrinter().print(expression));
+    //System.out.println(new AstPrinter().print(expression));
   }
 }
