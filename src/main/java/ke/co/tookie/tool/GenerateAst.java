@@ -18,6 +18,11 @@ public class GenerateAst {
                 "Literal  : Object value",
                 "Unary    : Token operator, Expr right"
               ));
+
+    defineAst(outputDir, "Stmt", Arrays.asList(
+                "Expression : Expr expression",
+                "Print : Expr expression"
+              ));
   }
 
   private static void defineAst(String outputDir, String baseName, List<String> types) throws IOException {
@@ -54,7 +59,7 @@ public class GenerateAst {
     for (String type : types) {
       String typeName = type.split(":")[0].trim();
       writer.println("    R visit" + typeName + baseName + "(" +
-          typeName + " " + baseName.toLowerCase() + ");");
+                     typeName + " " + baseName.toLowerCase() + ");");
     }
 
     writer.println("  }");
@@ -64,7 +69,7 @@ public class GenerateAst {
     PrintWriter writer, String baseName,
     String className, String fieldList) {
     writer.println("  static class " + className + " extends " +
-                   baseName + "{");
+                   baseName + " {");
 
     // Constructor.
     writer.println("    " + className + " (" + fieldList + ") {");
@@ -83,7 +88,7 @@ public class GenerateAst {
     writer.println("    @Override");
     writer.println("    <R> R accept(Visitor<R> visitor) {");
     writer.println("      return visitor.visit" +
-        className + baseName + "(this);");
+                   className + baseName + "(this);");
     writer.println("    }");
 
     // Fields.

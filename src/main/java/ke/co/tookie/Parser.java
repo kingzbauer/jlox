@@ -1,10 +1,18 @@
 package ke.co.tookie;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import static ke.co.tookie.TokenType.*;
 
-
+// program       → statement* EOF ;
+//
+// statement     → exprStmt
+//               | printStmt ;
+//
+// exprStmt      → expression ";" ;
+// printStmt     → "print" expression ";" ;
+//
 //expression     → equality ;
 //equality       → comparison ( ( "!=" | "==" ) comparison )* ;
 //comparison     → term ( ( ">" | ">=" | "<" | "<=" ) term )* ;
@@ -26,16 +34,35 @@ class Parser {
     this.tokens = tokens;
   }
 
-  Expr parse() {
-    try {
-      return expression();
-    } catch (ParseError error) {
-      return null;
+  List<Stmt> parse() {
+    List<Stmt> statements = new ArrayList<>();
+    while (!isAtEnd()) {
+      statements.add(statement());
     }
+
+    return statements;
   }
 
   private Expr expression() {
     return equality();
+  }
+
+  private Stmt statement() {
+    if (match(PRINT)) return printStatement();
+
+    return expressionStatement();
+  }
+
+  private Stmt printStatement() {
+    Expr value = expression();
+    consume(SEMICOLON, "Expect ';' after value.");
+    return new Stmt.Print(value);
+  }
+
+  private Stmt expressionStatement() {
+    Expr expr = expression();
+    consume(SEMICOLON, "Expect ';' after expression.");
+    return new Stmt.Expression(expr);
   }
 
   private Expr equality() {
@@ -53,7 +80,7 @@ class Parser {
   private Expr comparison() {
     Expr expr = term();
 
-    while(match(GREATER, GREATER_EQUAL, LESS, LESS_EQUAL)) {
+    while (match(GREATER, GREATER_EQUAL, LESS, LESS_EQUAL)) {
       Token operator = previous();
       Expr right = term();
       expr = new Expr.Binary(expr, operator, right);
@@ -65,7 +92,7 @@ class Parser {
   private Expr term() {
     Expr expr = factor();
 
-    while(match(MINUS, PLUS)) {
+    while (match(MINUS, PLUS)) {
       Token operator = previous();
       Expr right = factor();
       expr = new Expr.Binary(expr, operator, right);
@@ -77,7 +104,7 @@ class Parser {
   private Expr factor() {
     Expr expr = unary();
 
-    while(match(SLASH, STAR)) {
+    while (match(SLASH, STAR)) {
       Token operator = previous();
       Expr right = unary();
       expr = new Expr.Binary(expr, operator, right);
@@ -161,20 +188,20 @@ class Parser {
   private void synchronize() {
     advance();
 
-    while(!isAtEnd()) {
+    while (!isAtEnd()) {
       if (previous().type == SEMICOLON) return;
 
-      switch(peek().type) {
-          case CLASS:
-          case FUN:
-          case VAR:
-          case FOR:
-          case IF:
-          case WHILE:
-          case PRINT:
-          case RETURN:
-            return;
-          default:
+      switch (peek().type) {
+      case CLASS:
+      case FUN:
+      case VAR:
+      case FOR:
+      case IF:
+      case WHILE:
+      case PRINT:
+      case RETURN:
+        return;
+      default:
       }
 
       advance();

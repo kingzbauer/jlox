@@ -5,3 +5,6 @@ target/
 
 # java tags file
 tags
+
+# ignore jlox files
+*.jlox
