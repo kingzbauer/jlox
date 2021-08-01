@@ -13,8 +13,15 @@ import static ke.co.tookie.TokenType.*;
 // varDecl       → "var" IDENTIFIER ( "=" expression )? ";" ;
 //
 // statement     → exprStmt
+//               | ifStmt
 //               | printStmt
+//               | whileStmt
 //               | block;
+//
+// whileStmt     → "while" "(" expression ")" statement ;
+//
+// ifStmt        → "if" "(" expression ")" statement
+//               ( "else" expression )? ;
 //
 // block         → "{" declaration* "}" ;
 //
@@ -23,7 +30,9 @@ import static ke.co.tookie.TokenType.*;
 //
 // expression     → assignment ;
 // assignment     → IDENTIFIER "=" assignment
-//                | equality ;
+//                | logic_or ;
+// logic_or       → logic_and ( "or" logic_and )* ;
+// logic_and      → equality ( "and" equality )* ;
 // equality       → comparison ( ( "!=" | "==" ) comparison )* ;
 // comparison     → term ( ( ">" | ">=" | "<" | "<=" ) term )* ;
 // term           → factor ( ( "-" | "+" ) factor )* ;
@@ -60,10 +69,26 @@ class Parser {
   }
 
   private Stmt statement() {
+    if (match(IF)) return ifStatement();
     if (match(PRINT)) return printStatement();
+    if (match(WHILE)) return whileStatement();
     if (match(LEFT_BRACE)) return new Stmt.Block(block());
 
     return expressionStatement();
+  }
+
+  private Stmt ifStatement() {
+    consume(LEFT_PAREN, "Expected '(' after if.");
+    Expr condition = expression();
+    consume(RIGHT_PAREN, "Expected ')' after if condition.");
+
+    Stmt thenBranch = statement();
+    Stmt elseBranch = null;
+    if (match(ELSE)) {
+      elseBranch = statement();
+    }
+
+    return new Stmt.If(condition, thenBranch, elseBranch);
   }
 
   private Stmt declaration() {
@@ -95,6 +120,15 @@ class Parser {
     return new Stmt.Var(name, initializer);
   }
 
+  private Stmt whileStatement() {
+    consume(LEFT_PAREN, "Expect '(' after 'while'");
+    Expr condition = expression();
+    consume(RIGHT_PAREN, "Expect ')' after 'while'");
+    Stmt body = statement();
+
+    return new Stmt.While(condition, body);
+  }
+
   private Stmt expressionStatement() {
     Expr expr = expression();
     consume(SEMICOLON, "Expect ';' after expression.");
@@ -113,7 +147,7 @@ class Parser {
   }
 
   private Expr assignment() {
-    Expr expr = equality();
+    Expr expr = or();
 
     if (match(EQUAL)) {
       Token equals = previous();
@@ -128,6 +162,30 @@ class Parser {
     }
 
     return expr;
+  }
+
+  private Expr or() {
+    Expr left = and();
+
+    while(match(OR)) {
+      Token operator = previous();
+      Expr right = and();
+      left = new Expr.Logical(left, operator, right);
+    }
+
+    return left;
+  }
+
+  private Expr and() {
+    Expr left = equality();
+
+    while(match(AND)) {
+      Token operator = previous();
+      Expr right = and();
+      left = new Expr.Logical(left, operator, right);
+    }
+
+    return left;
   }
 
   private Expr equality() {
