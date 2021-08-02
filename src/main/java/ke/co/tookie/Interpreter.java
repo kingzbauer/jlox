@@ -8,9 +8,11 @@ class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
   private Environment environment = globals;
 
   Interpreter() {
-    globals.define("clock", new LoxCallable(){
+    globals.define("clock", new LoxCallable() {
       @Override
-      public int arity() { return 0; };
+      public int arity() {
+        return 0;
+      };
 
       @Override
       public Object call(Interpreter interpreter, List<Object> arguments) {
@@ -18,7 +20,9 @@ class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
       }
 
       @Override
-      public String toString() { return "<native fn>";}
+      public String toString() {
+        return "<native fn>";
+      }
     });
   }
 
@@ -89,6 +93,13 @@ class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
   }
 
   @Override
+  public Void visitFunctionStmt(Stmt.Function stmt) {
+    LoxFunction function = new LoxFunction(stmt, environment);
+    environment.define(stmt.name.lexeme, function);
+    return null;
+  }
+
+  @Override
   public Void visitIfStmt(Stmt.If stmt) {
     if (isTruthy(evaluate(stmt.condition))) {
       execute(stmt.thenBranch);
@@ -103,6 +114,14 @@ class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
     Object value = evaluate(stmt.expression);
     System.out.println(stringify(value));
     return null;
+  }
+
+  @Override
+  public Void visitReturnStmt(Stmt.Return stmt) {
+    Object value = null;
+    if (stmt.value != null) value = evaluate(stmt.value);
+
+    throw new Return(value);
   }
 
   @Override

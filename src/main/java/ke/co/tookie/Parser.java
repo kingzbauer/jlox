@@ -23,6 +23,7 @@ import static ke.co.tookie.TokenType.*;
 //               | forStmt
 //               | ifStmt
 //               | printStmt
+//               | returnStmt
 //               | whileStmt
 //               | block;
 // forStmt       → "for" "(" ( varDecl | exprStmt | ";" )
@@ -33,6 +34,7 @@ import static ke.co.tookie.TokenType.*;
 //
 // ifStmt        → "if" "(" expression ")" statement
 //               ( "else" expression )? ;
+// returnStmt    → "return" expression? ";" ;
 //
 // block         → "{" declaration* "}" ;
 //
@@ -87,6 +89,7 @@ class Parser {
     if (match(FOR)) return forStatement();
     if (match(IF)) return ifStatement();
     if (match(PRINT)) return printStatement();
+    if (match(RETURN)) return returnStatement();
     if (match(WHILE)) return whileStatement();
     if (match(LEFT_BRACE)) return new Stmt.Block(block());
 
@@ -167,6 +170,17 @@ class Parser {
     return new Stmt.Print(value);
   }
 
+  private Stmt returnStatement() {
+    Token keyword = previous();
+    Expr value = null;
+    if (!check(SEMICOLON)) {
+      value = expression();
+    }
+
+    consume(SEMICOLON, "Expect ';' after return value.");
+    return new Stmt.Return(keyword, value);
+  }
+
   private Stmt varDeclaration() {
     Token name = consume(IDENTIFIER, "Expect variable name.");
 
@@ -208,7 +222,7 @@ class Parser {
      }
      consume(RIGHT_PAREN, "Expect ')' after parameters.");
 
-     consume(RIGHT_BRACE, "Expect '{' before " + kind + " body.");
+     consume(LEFT_BRACE, "Expect '{' before " + kind + " body.");
      List<Stmt> body = block();
      return new Stmt.Function(name, parameters, body);
   }
