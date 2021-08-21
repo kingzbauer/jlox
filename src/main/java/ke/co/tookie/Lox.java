@@ -10,7 +10,7 @@ import java.util.List;
 
 public class Lox {
   private static final Interpreter interpreter = new Interpreter();
-  static boolean hadError = false;
+  static Boolean hadError = false;
   static boolean hadRuntimeError = false;
 
   public static void main(String[] args) throws IOException {
@@ -56,10 +56,9 @@ public class Lox {
     if (hadError) return;
 
     Resolver resolver = new Resolver(interpreter);
+    resolver.resolve(statements);
 
     if (hadError) return;
-
-    resolver.resolve(statements);
 
     interpreter.interpret(statements);
   }

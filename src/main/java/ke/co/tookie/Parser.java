@@ -47,7 +47,7 @@ import static ke.co.tookie.TokenType.*;
 // arguments     → expression ( "," expression )* ;
 //
 // expression     → assignment ;
-// assignment     → IDENTIFIER "=" assignment
+// assignment     → ( call "." )? IDENTIFIER "=" assignment
 //                | logic_or ;
 // logic_or       → logic_and ( "or" logic_and )* ;
 // logic_and      → equality ( "and" equality )* ;
@@ -57,7 +57,7 @@ import static ke.co.tookie.TokenType.*;
 // factor         → unary ( ( "/" | "*" ) unary )* ;
 // unary          → ( "!" | "-" ) unary
 //                | call ;
-// call           → primary ( "(" arguments? ")" )* ;
+// call           → primary ( "(" arguments? ")" | "." IDENTIFIER )* ;
 // arguments      → expression ( "," expression )* ;
 // primary        → NUMBER | STRING
 //               | "true" | "false" | "nil"
@@ -173,7 +173,7 @@ class Parser {
     consume(LEFT_BRACE, "Expect '{' before class body.");
 
     List<Stmt.Function> methods = new ArrayList<>();
-    while(!check(RIGHT_BRACE) && !isAtEnd()) {
+    while (!check(RIGHT_BRACE) && !isAtEnd()) {
       methods.add(function("method"));
     }
 
@@ -228,21 +228,21 @@ class Parser {
 
   private Stmt.Function function(String kind) {
     Token name = consume(IDENTIFIER, "Expect " + kind + " name.");
-     consume(LEFT_PAREN, "Expect '(' after " + kind + " name.");
-     List<Token> parameters = new ArrayList<>();
-     if (!check(RIGHT_PAREN)) {
-       do {
-         if (parameters.size() >= 255) {
-           error(peek(), "Can't have more than 255 parameters.");
-         }
-         parameters.add(consume(IDENTIFIER, "Expect parameter name."));
-       } while(match(COMMA));
-     }
-     consume(RIGHT_PAREN, "Expect ')' after parameters.");
+    consume(LEFT_PAREN, "Expect '(' after " + kind + " name.");
+    List<Token> parameters = new ArrayList<>();
+    if (!check(RIGHT_PAREN)) {
+      do {
+        if (parameters.size() >= 255) {
+          error(peek(), "Can't have more than 255 parameters.");
+        }
+        parameters.add(consume(IDENTIFIER, "Expect parameter name."));
+      } while (match(COMMA));
+    }
+    consume(RIGHT_PAREN, "Expect ')' after parameters.");
 
-     consume(LEFT_BRACE, "Expect '{' before " + kind + " body.");
-     List<Stmt> body = block();
-     return new Stmt.Function(name, parameters, body);
+    consume(LEFT_BRACE, "Expect '{' before " + kind + " body.");
+    List<Stmt> body = block();
+    return new Stmt.Function(name, parameters, body);
   }
 
   private List<Stmt> block() {
@@ -266,6 +266,9 @@ class Parser {
       if (expr instanceof Expr.Variable) {
         Token name = ((Expr.Variable)expr).name;
         return new Expr.Assign(name, value);
+      } else if (expr instanceof Expr.Get) {
+        Expr.Get get = (Expr.Get) expr;
+        return new Expr.Set(get.object, get.name, value);
       }
 
       error(equals, "Invalid assignment target.");
@@ -378,6 +381,9 @@ class Parser {
     while (true) {
       if (match(LEFT_PAREN)) {
         expr = finishCall(expr);
+      } else if (match(DOT)) {
+        Token name = consume(IDENTIFIER, "Expect property name after '.'");
+        expr = new Expr.Get(expr, name);
       } else {
         break;
       }
@@ -394,6 +400,8 @@ class Parser {
     if (match(NUMBER, STRING)) {
       return new Expr.Literal(previous().literal);
     }
+
+    if (match(THIS)) return new Expr.This(previous());
 
     if (match(IDENTIFIER)) {
       return new Expr.Variable(previous());
